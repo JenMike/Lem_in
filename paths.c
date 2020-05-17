@@ -1,7 +1,33 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   paths.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: jenmike <jenmike@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2020/05/16 21:03:27 by jenmike           #+#    #+#             */
+/*   Updated: 2020/05/17 11:58:06 by jenmike          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "lemin.h"
 
-static int			*path_array(t_setup *s_room, int *room,
-		int size, int total_links)
+int			visit_check(t_room *s_room, int room_nbr)
+{
+	t_room			*exploring;
+
+    exploring = s_room;
+	while (exploring)
+	{
+		if (exploring->r_nbr == room_nbr && exploring->visit_check == 1)
+			return (1); //visited
+		exploring = exploring->next;
+	}
+	return (0); //unvisited
+}
+
+static int			*path_array(t_room *s_room, int *room,
+		int len, int total_links)
 {
 	int				i;
 	int				j;
@@ -10,14 +36,14 @@ static int			*path_array(t_setup *s_room, int *room,
 
 	i = 0;
 	j = 0;
-	if (!(path_array = (int *)malloc(sizeof(int) * total_links)))
+	if (!(path_array = (int*)malloc(sizeof(int) * total_links)))
 		error_out(4);
-	while (i < size)
+	while (i < len)
 	{
-		explore = s_room->links;
+		explore = s_room->links_pf;
 		while (explore)
 		{
-			if (explore->from_room == room[i] && visit_check(s_room, explore->to_room) == UNVISITED)
+			if (explore->from_room == room[i] && visit_check(s_room, explore->to_room) == 0)
 				path_array[j++] = explore->to_room;
 			explore = explore->next;
 		}
@@ -26,7 +52,7 @@ static int			*path_array(t_setup *s_room, int *room,
 	return (path_array);
 }
 
-static int			get_all_links(t_setup *s_room, int *room, int size)
+static int			get_all_links(t_room *s_room, int *room, int len)
 {
 	int				i;
 	t_links			*explore;
@@ -34,9 +60,9 @@ static int			get_all_links(t_setup *s_room, int *room, int size)
 
 	i = 0;
 	total_links = 0;
-	while (i < size)
+	while (i < len)
 	{
-		explore = s_room->links;
+		explore = s_room->links_pf;
 		while (explore)
 		{
 			if (explore->from_room == room[i] && visit_check(s_room, explore->to_room))
@@ -48,7 +74,7 @@ static int			get_all_links(t_setup *s_room, int *room, int size)
 	return (total_links);
 }
 
-void    	get_paths(t_setup *s_room, int moves, int *room, int size)
+void    	get_paths(t_room *s_room, int moves, int *room, int len)
 {
 	int				i;
 	int				*p_array;
@@ -56,23 +82,24 @@ void    	get_paths(t_setup *s_room, int moves, int *room, int size)
 
 	i = 0;
 	total_links = 0;
-	while (i < size)
+	while (i < len)
 	{
 		enter_room(s_room, room[i]);
-		if (room[i] == s_room->end->r_nbr)
+		if (room[i] == s_room->end_r->r_nbr)
 		{
 			exit_room(s_room, room[i]);
-			s_room->quickest_path = moves;
+			s_room->q_path = moves;
 			return ;
 		}
 		i++;
 	}
-	if (!(total_links = get_all_links(s_room, room, size)))
+	if (!(total_links = get_all_links(s_room, room, len)))
 		return ;
-	p_array = path_array(s_room, room, size, total_links);
+	p_array = path_array(s_room, room, len, total_links);
 	get_paths(s_room, moves + 1, p_array, total_links);
 	i = 0;
-	while (i < size)
+	while (i < len)
 		exit_room(s_room, room[i++]);
 	free(p_array);
 }
+
